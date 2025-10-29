@@ -1,0 +1,22 @@
+# Compiler files
+cache/
+out/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+/libs/**/build/
+/lib/**/build/
+
+# Docs
+docs/
+
+# Dotenv file
+.env
+
+# Foundry remappings
+remappings.txt
+
+# macOS
+.DS_Store
