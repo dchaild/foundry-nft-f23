@@ -12,6 +12,7 @@ out/
 # Docs
 docs/
 
+
 # Dotenv file
 .env
 
@@ -20,3 +21,7 @@ remappings.txt
 
 # macOS
 .DS_Store
+
+# VS Code
+.vscode/
+.env 

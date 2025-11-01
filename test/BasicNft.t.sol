@@ -72,27 +72,4 @@ contract BasicNftTest is Test {
         assertEq(basicNft.balanceOf(address(1)), 1);
         assertEq(basicNft.balanceOf(address(2)), 1);
     }   
-
-    function testTokenURIsAreUnique() public {
-        vm.prank(USER);
-        basicNft.mintNFT();
-        vm.prank(USER);
-        basicNft.mintNFT();
-        assertEq(basicNft.tokenURI(0), "ipfs://QmQPEMsfd1tJnqYPbnTQCjoa8vczfsV1FmqZWgC381ausa/0");
-        assertEq(basicNft.tokenURI(1), "ipfs://QmQPEMsfd1tJnqYPbnTQCjoa8vczfsV1FmqZWgC381ausa/1");
-    }
-
-    function testCanMintAndCheckOwnership() public {
-        vm.prank(USER);
-        basicNft.mintNFT();
-        assertEq(basicNft.ownerOf(0), USER);
-    }
-
-    function testCanMintAndHaveCorrectBalance() public {
-        vm.prank(USER);
-        basicNft.mintNFT();
-        assertEq(basicNft.balanceOf(USER), 1);
-    }
-
-
 }

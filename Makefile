@@ -1,25 +1,67 @@
-.PHONY: update anvil deploy test test-zksync
+-include .env
 
-DEFAULT_ANVIL_KEY := 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+.PHONY: all test clean deploy fund help install snapshot format anvil zktest
+
+SEPOLIA_PRIVATE_KEY := 0x4656f1c453661acde77908040951d5fda3d315f655f76c122b0d011b1d8adc06
+DEFAULT_ZKSYNC_LOCAL_KEY := 0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110
 
 all: clean remove install update build
 
-clean :; forge clean 
+# Clean the repo
+clean  :; forge clean
 
+# Remove modules
 remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
 
-install :; forge install
+install :; forge install cyfrin/foundry-devops@0.2.2 --no-commit && forge install foundry-rs/forge-std@v1.8.2 --no-commit && forge install openzeppelin/openzeppelin-contracts@v5.0.2 --no-commit
 
+# Update Dependencies
 update:; forge update
 
-build :; forge build
+build:; forge build
 
-anvil:;  anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
-
-deploy:; forge script script/DeployStuff.s.sol:DeployStuff --broadcast --rpc-url http://localhost:8545  --private-key $(DEFAULT_ANVIL_KEY)   -vvvv 
-
-interact:; forge script script/InteractWithStuff.s.sol:InteractWithStuff --broadcast --rpc-url http://localhost:8545  --private-key $(DEFAULT_ANVIL_KEY)   -vvvv 
+test :; forge test 
 
 zktest :; foundryup-zksync && forge test --zksync && foundryup
 
-test :; forge test
+snapshot :; forge snapshot
+
+format :; forge fmt
+
+anvil :; anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
+
+NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
+
+ifeq ($(findstring --network sepolia,$(ARGS)),--network sepolia)
+	NETWORK_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_PRIVATE_KEY) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+endif
+
+deploy:
+	@forge script script/DeployBasicNft.s.sol:DeployBasicNft $(NETWORK_ARGS)
+# This is the correct way to write a conditional target in a Makefile
+ifndef DEPLOYED_CONTRACT_ADDRESS
+verify:
+	@echo "Error: DEPLOYED_CONTRACT_ADDRESS is not set."
+	@echo "Please run: make verify DEPLOYED_CONTRACT_ADDRESS=<your_contract_address>"
+	@exit 1
+else # DEPLOYED_CONTRACT_ADDRESS is set
+
+COMPILER_VERSION := $(shell cat foundry.toml | grep "solc_version" | cut -d '"' -f 2)
+verify:
+	@forge verify-contract --chain-id 11155111 --num-of-optimizations 200 --watch --constructor-args `cast abi-encode "constructor()"` --compiler-version $(COMPILER_VERSION) $(DEPLOYED_CONTRACT_ADDRESS) src/BasicNft.sol:BasicNft --etherscan-api-key $(ETHERSCAN_API_KEY)
+endif
+
+mint:
+	@forge script script/Interactions.s.sol:MintBasicNft ${NETWORK_ARGS}
+
+deployMood:
+	@forge script script/DeployMoodNft.s.sol:DeployMoodNft $(NETWORK_ARGS)
+
+mintMoodNft:
+	@forge script script/Interactions.s.sol:MintMoodNft $(NETWORK_ARGS)
+
+flipMoodNft:
+	@forge script script/Interactions.s.sol:FlipMoodNft $(NETWORK_ARGS)
+
+zkdeploy: 
+	@forge create src/OurToken.sol:OurToken --rpc-url http://127.0.0.1:8011 --private-key $(DEFAULT_ZKSYNC_LOCAL_KEY) --legacy --zksync
